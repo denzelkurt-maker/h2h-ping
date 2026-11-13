@@ -3128,6 +3128,7 @@ async function synchroniser(complet) {
     if (!complet && ROWS.length) { var mx = ROWS.reduce(function (a, r) { return r[0] > a ? r[0] : a; }, ''); depuis = new Date(dUTC(mx).getTime() - 2 * 86400000).toISOString().slice(0, 10); }
     var r = await appelScript(conf, depuis ? { action: 'matchs', depuis: depuis } : { action: 'matchs' });
     if (!r.ok) { setSync('Échec : ' + (r.message || r.code || 'réponse inattendue') + (ROWS.length ? ' · copie locale affichée' : '')); renderData(); return; }
+    if (!r.m || (!r.m.length && ROWS.length)) { setSync('Réponse vide du script : copie locale conservée (' + ROWS.length + ' matchs)'); renderData(); return; }
     var rows;
     if (depuis) { var gardees = ROWS.filter(function (x) { return x[0] < depuis; }); rows = gardees.concat(r.m); } else rows = r.m;
     var vus = {}; rows = rows.filter(function (x) { var k = cleLigne(x); if (vus[k]) return false; vus[k] = 1; return true; });
@@ -3191,10 +3192,10 @@ document.addEventListener('click', async function (ev) {
       if (!r.ok) { out.innerHTML = '<span class="status err">' + esc(r.message || 'Refusé') + '</span>'; return; }
       ecrireReglages({ url: url, cle: cle }); DB = {}; INFO_SCRIPT = r.version || '';
       out.innerHTML = '<span class="status ok">Connexion réussie : ' + r.matchs + ' matchs dans la feuille (script ' + esc(r.version || '?') + ').</span>';
-      effacerCache(); ROWS = []; synchroniser(true);
+      synchroniser(true);
     } catch (e) { out.innerHTML = '<span class="status err">Script injoignable (' + esc(e && e.message || e) + '). Vérifie l\'adresse et que le déploiement est ouvert à « Tout le monde ».</span>'; }
   } else if (act === 'sync') { synchroniser(false); }
-  else if (act === 'full') { effacerCache(); ROWS = []; synchroniser(true); }
+  else if (act === 'full') { synchroniser(true); }
 });
 async function initDonnees() {
   DL = telechargeur();
